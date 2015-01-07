@@ -18,7 +18,7 @@ static int render_image_height = 64;
 static int print_verbose = 0;
 
 // Grid
-static int grid_point_radius = 0.0125;
+static double grid_point_radius = 0.0125;
 static double* grid;
 static int grid_nx = 10;
 static int grid_ny = 10;
@@ -57,7 +57,7 @@ static int show_lights = 0;
 static int show_bboxes = 0;
 static int show_rays = 0;
 static int show_frame_rate = 0;
-static int show_grid = 0;
+static int show_grid = 1;
 
 
 
@@ -70,6 +70,11 @@ static void initGrid(R3Scene *scene)
   grid_dy = (scene->BBox().YMax() - grid_y0) / (grid_ny + 1);
   grid_x0 += grid_dx;
   grid_y0 += grid_dy;
+  if (print_verbose)
+  {
+    printf("Grid: (%.3f:%.3f:%.3f) X (%.3f:%.3f:%.3f)\n", grid_x0, grid_dx, grid_x0 + (grid_nx - 1) * grid_dx,
+      grid_y0, grid_dy, grid_y0 + (grid_ny - 1) * grid_dy);
+  }
   grid = new double[grid_nx * grid_ny];
   for (int i = 0; i < grid_nx * grid_ny; i++)
     grid[i] = 0;
@@ -90,7 +95,6 @@ static void setGridValue(RNScalar value, int ix, int iy)
 {
   grid[ix * grid_ny + iy] = value;
 }
-
 
 ////////////////////////////////////////////////////////////////////////
 // Draw functions
@@ -319,6 +323,14 @@ DrawSphere(R3Scene *scene, R3Point position, RNScalar value)
   double radius = grid_point_radius;
 
   glColor3d(0.0, value, 1.0 - value);
+
+  GLfloat c[4];
+  c[0] = 0.0;
+  c[1] = value;
+  c[2] = 1.0 - value;
+  c[3] = 0.5;
+  glMaterialfv(GL_FRONT, GL_AMBIENT, c);
+
   R3Sphere(position, radius).Draw();
 
 }
@@ -594,10 +606,12 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     show_rays = !show_rays;
     break;
 
+#if 0
   case 'S':
   case 's':
     show_shapes = !show_shapes;
     break;
+#endif
 
   case 'T':
   case 't':
@@ -607,24 +621,27 @@ void GLUTKeyboard(unsigned char key, int x, int y)
   case ' ':
     viewer->SetCamera(scene->Camera());
     break;
-/*
-  case VK_LEFT:
-    scene->Camera().Translate(R3Vector(-camera_dx, 0, 0));
-    viewer->SetCamera(scene->Camera());
+
+  case 'A':
+  case 'a':
+    viewer->TranslateCamera(R3Vector(-camera_dx * scene->BBox().DiagonalRadius(), 0, 0));
     break;
-  case VK_RIGHT:
-    scene->Camera().Translate(R3Vector(camera_dx, 0, 0));
-    viewer->SetCamera(scene->Camera());
+
+  case 'D':
+  case 'd':
+    viewer->TranslateCamera(R3Vector(camera_dx * scene->BBox().DiagonalRadius(), 0, 0));
     break;
-  case VK_UP:
-    scene->Camera().Translate(R3Vector(0, camera_dy, 0));
-    viewer->SetCamera(scene->Camera());
+
+  case 'W':
+  case 'w':
+    viewer->TranslateCamera(R3Vector(0, camera_dy * scene->BBox().DiagonalRadius(), 0));
     break;
-  case VK_DOWN:
-    scene->Camera().Translate(R3Vector(0, -camera_dy, 0));
-    viewer->SetCamera(scene->Camera());
+
+  case 'S':
+  case 's':
+    viewer->TranslateCamera(R3Vector(0, -camera_dy * scene->BBox().DiagonalRadius(), 0));
     break;
-*/
+
   case 27: // ESCAPE
     GLUTStop();
     break;
@@ -823,7 +840,7 @@ int main(int argc, char **argv)
 
 
   else {
-    initGrid(scene); 
+    initGrid(scene);
     // Initialize GLUT
     GLUTInit(&argc, argv);
 

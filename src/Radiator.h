@@ -5,7 +5,7 @@
 
 class Radiator {
     public:
-        Radiator(double s, R3Point &p) : strength(s), position(p) {};
+        Radiator(R3Point &p, double s) : strength(s), position(p) {};
         ~Radiator(void); 
 
     private:
