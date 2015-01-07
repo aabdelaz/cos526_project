@@ -18,8 +18,17 @@ static char *screenshot_image_name = NULL;
 static int render_image_width = 64;
 static int render_image_height = 64;
 static int print_verbose = 0;
-static int grid_point_radius = 0.0125;
 
+
+// Grid
+static int grid_point_radius = 0.0125;
+static double* grid;
+static int grid_nx = 10;
+static int grid_ny = 10;
+static double grid_dx;
+static double grid_dy;
+static double grid_x0;
+static double grid_y0;
 
 // GLUT variables 
 
@@ -30,6 +39,8 @@ static int GLUTmouse[2] = { 0, 0 };
 static int GLUTbutton[3] = { 0, 0, 0 };
 static int GLUTmouse_drag = 0;
 static int GLUTmodifiers = 0;
+static double camera_dx = 0.02;
+static double camera_dy = 0.02;
 
 
 
@@ -49,7 +60,38 @@ static int show_lights = 0;
 static int show_bboxes = 0;
 static int show_rays = 0;
 static int show_frame_rate = 0;
+static int show_grid = 1;
 
+
+static void initGrid(R3Scene *scene)
+{
+  assert(scene);
+  grid_x0 = scene->BBox().XMin();
+  grid_y0 = scene->BBox().YMin();
+  grid_dx = (scene->BBox().XMax() - grid_x0) / (grid_nx + 1);
+  grid_dy = (scene->BBox().YMax() - grid_y0) / (grid_ny + 1);
+  grid_x0 += grid_dx;
+  grid_y0 += grid_dy;
+  grid = new double[grid_nx * grid_ny];
+  for (int i = 0; i < grid_nx * grid_ny; i++)
+    grid[i] = 0;
+}
+
+/* TODO: inline these? */
+static R3Point getGridPosition(int ix, int iy)
+{
+   return R3Point(grid_x0 + grid_dx * ix, grid_y0 + grid_dy * iy, 0.0);
+}
+
+static RNScalar getGridValue(int ix, int iy)
+{
+  return grid[ix * grid_ny + iy];
+}
+
+static void setGridValue(RNScalar value, int ix, int iy)
+{
+  grid[ix * grid_ny + iy] = value;
+}
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -281,6 +323,16 @@ DrawSphere(R3Scene *scene, R3Point position, RNScalar value)
 
 }
 
+/* draws the grid */
+static void DrawGrid(R3Scene *scene)
+{
+  for (int ix = 0; ix < grid_nx; ix++)
+    for (int iy = 0; iy < grid_ny; iy++)
+      DrawSphere(scene, getGridPosition(ix, iy), getGridValue(ix, iy));
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // Glut user interface functions
 ////////////////////////////////////////////////////////////////////////
@@ -352,6 +404,13 @@ void GLUTRedraw(void)
     glDisable(GL_LIGHTING);
     glColor3d(1.0, 0.0, 0.0);
     DrawBBoxes(scene, scene->Root());
+  }
+
+  // Draw grid
+  if (show_grid) {
+    glDisable(GL_LIGHTING);
+    glColor3d(1.0, 1.0, 1.0);
+    DrawGrid(scene);
   }
 
   // Draw frame time
@@ -519,6 +578,11 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     show_camera = !show_camera;
     break;
 
+  case 'G':
+  case 'g':
+    show_grid = !show_grid;
+    break;
+
   case 'L':
   case 'l':
     show_lights = !show_lights;
@@ -540,6 +604,23 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     break;
 
   case ' ':
+    viewer->SetCamera(scene->Camera());
+    break;
+
+  case VK_LEFT:
+    scene->Camera().Translate(R3Vector(-camera_dx, 0, 0));
+    viewer->SetCamera(scene->Camera());
+    break;
+  case VK_RIGHT:
+    scene->Camera().Translate(R3Vector(camera_dx, 0, 0));
+    viewer->SetCamera(scene->Camera());
+    break;
+  case VK_UP:
+    scene->Camera().Translate(R3Vector(0, camera_dy, 0));
+    viewer->SetCamera(scene->Camera());
+    break;
+  case VK_DOWN:
+    scene->Camera().Translate(R3Vector(0, -camera_dy, 0));
     viewer->SetCamera(scene->Camera());
     break;
 
@@ -695,6 +776,10 @@ ParseArgs(int argc, char **argv)
       }
       else if (!strcmp(*argv, "-gr")) { 
         argc--; argv++; grid_point_radius = atof(*argv); 
+      }
+      else if (!strcmp(*argv, "-gdim")) { 
+        argc--; argv++; grid_nx = atoi(*argv); 
+        argc--; argv++; grid_ny = atoi(*argv); 
       }
       else { 
         fprintf(stderr, "Invalid program argument: %s", *argv); 
