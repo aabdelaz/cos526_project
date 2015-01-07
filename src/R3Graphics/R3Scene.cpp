@@ -6,9 +6,6 @@
 
 #include "R3Graphics.h"
 
-
-
-
 /* Member functions */
 
 int 
@@ -82,7 +79,12 @@ RemoveNode(R3SceneNode *node)
   node->scene = NULL;
 }
 
-
+void R3Scene::
+InsertRadiator(Radiator *r) 
+{
+  // Insert light
+  rad_sources.Insert(r);
+}
 
 void R3Scene::
 InsertLight(R3Light *light) 
@@ -891,6 +893,24 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
       R3SceneNode *node = new R3SceneNode(scene);
       node->InsertElement(element);
       group_nodes[depth]->InsertChild(node);
+    }
+    else if (!strcmp(cmd, "radiation_source")) {
+      // Read data
+      R3Point p1;
+      
+      // strength
+      double s;
+
+      if (fscanf(fp, "%lf%lf%lf%lf", &p1[0], &p1[1], &p1[2], &s) != 4) {
+        fprintf(stderr, "Unable to read radiation source at command %d in file %s\n", command_number, filename);
+        return 0;
+      }
+
+      // Create source
+      Radiator *source = new Radiator(p1, s);
+
+      // Insert into scene
+      scene->InsertRadiator(source);
     }
     else if (!strcmp(cmd, "sphere")) {
       // Read data
