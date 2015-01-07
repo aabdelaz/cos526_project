@@ -57,7 +57,7 @@ static int show_lights = 0;
 static int show_bboxes = 0;
 static int show_rays = 0;
 static int show_frame_rate = 0;
-static int show_grid = 1;
+static int show_grid = 0;
 
 
 
@@ -318,7 +318,7 @@ DrawSphere(R3Scene *scene, R3Point position, RNScalar value)
 
   double radius = grid_point_radius;
 
-  glColor3d(1.0, value, 1.0 - value);
+  glColor3d(0.0, value, 1.0 - value);
   R3Sphere(position, radius).Draw();
 
 }
@@ -326,6 +326,7 @@ DrawSphere(R3Scene *scene, R3Point position, RNScalar value)
 /* draws the grid */
 static void DrawGrid(R3Scene *scene)
 {
+
   for (int ix = 0; ix < grid_nx; ix++)
     for (int iy = 0; iy < grid_ny; iy++)
       DrawSphere(scene, getGridPosition(ix, iy), getGridValue(ix, iy));
@@ -408,7 +409,7 @@ void GLUTRedraw(void)
 
   // Draw grid
   if (show_grid) {
-    glDisable(GL_LIGHTING);
+    glEnable(GL_LIGHTING);
     glColor3d(1.0, 1.0, 1.0);
     DrawGrid(scene);
   }
@@ -822,7 +823,7 @@ int main(int argc, char **argv)
 
 
   else {
-    initGrid(scene);
+    initGrid(scene); 
     // Initialize GLUT
     GLUTInit(&argc, argv);
 
