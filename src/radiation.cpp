@@ -63,6 +63,7 @@ static int show_frame_rate = 0;
 static int show_grid = 1;
 
 
+
 static void initGrid(R3Scene *scene)
 {
   assert(scene);
@@ -311,10 +312,11 @@ DrawRays(R3Scene *scene)
 static void 
 DrawSphere(R3Scene *scene, R3Point position, RNScalar value)
 {
+  /*
 #ifdef (NDEBUG)
   assert(value >= 0.0);
   assert(value <= 1.0);
-#endif
+#endif*/
 
   double radius = grid_point_radius;
 
@@ -606,7 +608,7 @@ void GLUTKeyboard(unsigned char key, int x, int y)
   case ' ':
     viewer->SetCamera(scene->Camera());
     break;
-
+/*
   case VK_LEFT:
     scene->Camera().Translate(R3Vector(-camera_dx, 0, 0));
     viewer->SetCamera(scene->Camera());
@@ -623,7 +625,7 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     scene->Camera().Translate(R3Vector(0, -camera_dy, 0));
     viewer->SetCamera(scene->Camera());
     break;
-
+*/
   case 27: // ESCAPE
     GLUTStop();
     break;
@@ -820,7 +822,9 @@ int main(int argc, char **argv)
   scene = ReadScene(input_scene_name);
   if (!scene) exit(-1);
 
+
   else {
+    initGrid(scene);
     // Initialize GLUT
     GLUTInit(&argc, argv);
 
