@@ -735,21 +735,6 @@ int main(int argc, char **argv)
   scene = ReadScene(input_scene_name);
   if (!scene) exit(-1);
 
-  // Check output image file
-  if (output_image_name) {
-    // Set scene viewport
-    scene->SetViewport(R2Viewport(0, 0, render_image_width, render_image_height));
-
-    // Render image
-    R2Image *image = RenderImage(scene, render_image_width, render_image_height, print_verbose);
-    if (!image) exit(-1);
-
-    // Write image
-    if (!WriteImage(image, output_image_name)) exit(-1);
-    
-    // Delete image
-    delete image;
-  }
   else {
     // Initialize GLUT
     GLUTInit(&argc, argv);

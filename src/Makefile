@@ -8,8 +8,8 @@
 # List of source files
 #
 
-PHOTONMAP_SRCS=photonmap.cpp render.cpp
-PHOTONMAP_OBJS=$(PHOTONMAP_SRCS:.cpp=.o)
+RAD_SRCS=radiation.cpp
+RAD_OBJS=$(RAD_SRCS:.cpp=.o)
 
 KDTVIEW_SRCS=kdtview.cpp
 KDTVIEW_OBJS=$(KDTVIEW_SRCS:.cpp=.o)
@@ -21,7 +21,7 @@ KDTVIEW_OBJS=$(KDTVIEW_SRCS:.cpp=.o)
 #
 
 CC=g++
-CPPFLAGS=-Wall -I. -g -mmacosx-version-min=10.8
+CPPFLAGS=-Wall -I. -g #-mmacosx-version-min=10.8
 USER_CFLAGS=$(CPPFLAGS)
 export USER_CFLAGS
 LDFLAGS=-g
@@ -78,10 +78,10 @@ endif
 # Make targets
 #
 
-all: $(PKG_LIBS) photonmap kdtview 
+all: $(PKG_LIBS) radiation kdtview 
 
-photonmap: $(LIBS) $(PHOTONMAP_OBJS) 
-	    $(CC) -o photonmap $(CPPFLAGS) $(LDFLAGS) $(PHOTONMAP_OBJS) $(PKG_LIBS) $(OPENGL_LIBS) -lm
+radiation: $(LIBS) $(RAD_OBJS) 
+	    $(CC) -o radiation $(CPPFLAGS) $(LDFLAGS) $(RAD_OBJS) $(PKG_LIBS) $(OPENGL_LIBS) -lm
 
 kdtview: $(LIBS) $(KDTVIEW_OBJS) 
 	    $(CC) -o kdtview $(CPPFLAGS) $(LDFLAGS) $(KDTVIEW_OBJS) $(PKG_LIBS) $(OPENGL_LIBS) -lm
@@ -105,7 +105,7 @@ jpeg/libjpeg.a:
 	    cd jpeg; make
 
 clean:
-	    ${RM} -f */*.a */*/*.a *.o */*.o */*/*.o photonmap photonmap.exe kdtview kdtview.exe $(PKG_LIBS)
+	    ${RM} -f */*.a */*/*.a *.o */*.o */*/*.o radiation radiation.exe kdtview kdtview.exe $(PKG_LIBS)
 
 distclean:  clean
 	    ${RM} -f *~ 
