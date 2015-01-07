@@ -11,7 +11,7 @@ class R3Scene;
 class R3SceneNode;
 class R3SceneElement;
 class R3Model;
-
+class Radiator;
 
 
 /* Dependency include files */
@@ -59,7 +59,7 @@ class R3Model;
 #include "R3Graphics/R3SceneNode.h"
 #include "R3Graphics/R3Scene.h"
 
-
+#include "Radiator.h"
 
 /* Initialization functions */
 

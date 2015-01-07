@@ -38,6 +38,7 @@ public:
   void RemoveNode(R3SceneNode *node);
   void InsertLight(R3Light *light);
   void RemoveLight(R3Light *light);
+  void InsertRadiator(Radiator *r);
   void SetCamera(const R3Camera& viewer);
   void SetViewport(const R2Viewport& viewport);
   void SetViewer(const R3Viewer& viewer);
@@ -73,6 +74,7 @@ private:
   R3SceneNode *root;
   RNArray<R3SceneNode *> nodes;
   RNArray<R3Light *> lights;
+  RNArray<Radiator *> rad_sources;
   R3Viewer viewer;
   RNRgb ambient;
   RNRgb background;

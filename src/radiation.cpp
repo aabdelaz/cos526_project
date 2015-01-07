@@ -6,9 +6,7 @@
 
 #include "R3Graphics/R3Graphics.h"
 #include "fglut/fglut.h"
-#include "render.h"
-
-
+#include "Radiator.h"
 
 // Program variables
 
@@ -18,7 +16,6 @@ static char *screenshot_image_name = NULL;
 static int render_image_width = 64;
 static int render_image_height = 64;
 static int print_verbose = 0;
-
 
 // Grid
 static int grid_point_radius = 0.0125;
@@ -307,16 +304,17 @@ DrawRays(R3Scene *scene)
   }
 }
 
+
 /* draws the sphere at grid point position with value value */
 /* value must be scaled to be from 0 to 1 */
 static void 
 DrawSphere(R3Scene *scene, R3Point position, RNScalar value)
 {
-  /*
-#ifdef (NDEBUG)
+  
+#ifdef NDEBUG
   assert(value >= 0.0);
   assert(value <= 1.0);
-#endif*/
+#endif
 
   double radius = grid_point_radius;
 
