@@ -51,6 +51,7 @@ ifeq ("$(findstring CYGWIN,$(OS))", "CYGWIN")
 OPENGL_LIBS=-lglu32 -lopengl32 -lwinmm -lgdi32
 else ifeq ("$(OS)","Darwin")
 OPENGL_LIBS=-framework GLUT -framework opengl
+CPPFLAGS+= -mmacosx-version-min=10.8
 else
 OPENGL_LIBS=-lGLU -lGL
 endif
