@@ -43,6 +43,12 @@ static int num_rad_sources = 0;
 static double camera_dx = 0.02;
 static double camera_dy = 0.02;
 
+#if 0
+// FPS
+static int fpsmode = 0;
+static R3Camera FPSToggleCam;
+#endif
+
 
 
 // Application variables
@@ -927,6 +933,9 @@ int main(int argc, char **argv)
   else {
     initGrid(scene);
     num_rad_sources = scene->NRadSources();
+
+    if (!num_rad_sources)
+      movement = 0;
 
     // Initialize GLUT
     GLUTInit(&argc, argv);
