@@ -96,6 +96,46 @@ static void setGridValue(RNScalar value, int ix, int iy)
   grid[ix * grid_ny + iy] = value;
 }
 
+// returns distance from source to a point 
+static RNScalar source2pointDistance(R3Point point, Radiator source) {
+    return (point - source.GetPosition()).Length();
+}
+
+RNScalar opticalPath(R3Ray &ray, R3Scene *scene, R3Point source_point, RNBoolean in) {
+    R3SceneNode *node;
+    R3SceneElement *element;
+    R3Shape *shape;
+    R3Point point;
+    R3Vector normal;
+    RNScalar t;    
+    RNScalar epsilon = 1e-15;
+
+    RNBoolean intersects = scene->Intersects(ray, &node, &element, 
+                &shape, &point, &normal, &t); 
+
+    // if in is true we assume that our ray intersected with the scene
+    RNScalar mu = in ? element->Material()->Brdf()->IndexOfRefraction() : 1;
+
+    // in this case we have that we have traced our way to the 
+    // destination point, and we need not recurse 
+    if (!intersects || t > ray.T(source_point)) {
+       return (ray.Start() - source_point).Length()*mu;
+    }  
+
+    R3Ray newRay(ray.Start() + epsilon*ray.Vector(), source_point);
+    return (ray.Start() - point).Length()*mu +
+        opticalPath(newRay, scene, source_point, !in);  
+}
+
+// returns optical path length
+static RNScalar opticalPath(R3Point point, Radiator source, R3Scene *scene) {
+    R3Ray ray(source.GetPosition(), point);
+
+    RNBoolean in = FALSE;
+    return opticalPath(ray, scene, source.GetPosition(), in);
+
+}
+
 ////////////////////////////////////////////////////////////////////////
 // Draw functions
 ////////////////////////////////////////////////////////////////////////

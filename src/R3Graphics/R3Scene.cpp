@@ -146,6 +146,20 @@ Intersects(const R3Ray& ray,
   return TRUE;
 }
 
+// returns optical path length
+RNScalar R3Scene::
+OpticalPathLength(R3Point grid_point, Radiator source, RNScalar &distance)
+{
+  // Intersect with root node
+  if (!root->Intersects(ray, hit_node, hit_element, hit_shape, hit_point, hit_normal, hit_t)) return FALSE;
+
+  // Normalize normal vector
+  if (hit_normal) hit_normal->Normalize();
+
+  // Return hit
+  return TRUE;
+}
+
 
 
 void R3Scene::
@@ -907,7 +921,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
       }
 
       // Create source
-      Radiator *source = new Radiator(p1, s);
+      Radiator *source = new Radiator(s, p1);
 
       // Insert into scene
       scene->InsertRadiator(source);
