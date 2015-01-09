@@ -82,7 +82,7 @@ RemoveNode(R3SceneNode *node)
 void R3Scene::
 InsertRadiator(Radiator *r) 
 {
-  // Insert light
+  // Insert radiator
   rad_sources.Insert(r);
 }
 
@@ -93,7 +93,12 @@ InsertLight(R3Light *light)
   lights.Insert(light);
 }
 
-
+void R3Scene::
+RemoveRadiator(Radiator *r) 
+{
+  // Remove radiator
+  rad_sources.Remove(r);
+}
 
 void R3Scene::
 RemoveLight(R3Light *light) 

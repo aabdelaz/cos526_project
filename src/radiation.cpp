@@ -18,7 +18,7 @@ static int render_image_height = 64;
 static int print_verbose = 0;
 
 // Grid
-static double grid_point_radius = 0.0125;
+static double grid_point_radius = 0.00625;
 static double* grid;
 static int grid_nx = 10;
 static int grid_ny = 10;
@@ -36,6 +36,10 @@ static int GLUTmouse[2] = { 0, 0 };
 static int GLUTbutton[3] = { 0, 0, 0 };
 static int GLUTmouse_drag = 0;
 static int GLUTmodifiers = 0;
+// movement: 0 = camera, 1 for rad sources
+static int movement = 0;
+static int current_rad_source = 0;
+static int num_rad_sources = 0;
 static double camera_dx = 0.02;
 static double camera_dy = 0.02;
 
@@ -54,6 +58,7 @@ static R3Point center(0, 0, 0);
 static int show_shapes = 1;
 static int show_camera = 0;
 static int show_lights = 0;
+static int show_sources = 1;
 static int show_bboxes = 0;
 static int show_rays = 0;
 static int show_frame_rate = 0;
@@ -229,6 +234,25 @@ DrawLights(R3Scene *scene)
   }
 }
 
+static void 
+DrawSources(R3Scene *scene)
+{
+  // Draw all lights
+  double radius = scene->BBox().DiagonalRadius() * grid_point_radius * 3;
+  for (int i = 0; i < scene->NRadSources(); i++) {
+    Radiator *source = scene->RadSource(i);
+    if (i == current_rad_source)
+      RNLoadRgb(RNRgb(1.0,0.0,1.0));
+    else
+      RNLoadRgb(RNRgb(0.0,1.0,1.0));
+
+    R3Point position = source->Position();
+
+    // Draw sphere at source position 
+    R3Sphere(position, radius).Draw();
+  }
+}
+
 
 
 static void 
@@ -320,17 +344,17 @@ DrawSphere(R3Scene *scene, R3Point position, RNScalar value)
   assert(value <= 1.0);
 #endif
 
-  double radius = grid_point_radius;
+  double radius = grid_point_radius * scene->BBox().DiagonalRadius();
 
-  glColor3d(0.0, value, 1.0 - value);
+  /*glColor3d(0.0, value, 1.0 - value);
 
   GLfloat c[4];
   c[0] = 0.0;
   c[1] = value;
   c[2] = 1.0 - value;
   c[3] = 0.5;
-  glMaterialfv(GL_FRONT, GL_AMBIENT, c);
-
+  glMaterialfv(GL_FRONT, GL_AMBIENT, c);*/
+  RNLoadRgb(RNRgb(0.0,value,1.0 - value));
   R3Sphere(position, radius).Draw();
 
 }
@@ -395,6 +419,15 @@ void GLUTRedraw(void)
     glLineWidth(1);
   }
 
+  // Draw sources
+  if (show_sources) {
+    glDisable(GL_LIGHTING);
+    glColor3d(1.0, 1.0, 1.0);
+    glLineWidth(5);
+    DrawSources(scene);
+    glLineWidth(1);
+  }
+
   // Draw rays
   if (show_rays) {
     glDisable(GL_LIGHTING);
@@ -421,7 +454,7 @@ void GLUTRedraw(void)
 
   // Draw grid
   if (show_grid) {
-    glEnable(GL_LIGHTING);
+    glDisable(GL_LIGHTING);
     glColor3d(1.0, 1.0, 1.0);
     DrawGrid(scene);
   }
@@ -588,7 +621,23 @@ void GLUTKeyboard(unsigned char key, int x, int y)
 
   case 'C':
   case 'c':
+#if 0
     show_camera = !show_camera;
+#endif
+    movement = 0;
+    break;
+
+  case 'E':
+  case 'e':
+    if (num_rad_sources)
+    {
+      if (movement) {
+        current_rad_source = (current_rad_source + 1 ) % num_rad_sources;
+      }
+      else {
+        movement = 1;
+      }
+    }
     break;
 
   case 'G':
@@ -599,6 +648,11 @@ void GLUTKeyboard(unsigned char key, int x, int y)
   case 'L':
   case 'l':
     show_lights = !show_lights;
+    break;
+
+  case 'O':
+  case 'o':
+    show_sources = !show_sources;
     break;
 
   case 'R':
@@ -623,24 +677,55 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     break;
 
   case 'A':
-  case 'a':
-    viewer->TranslateCamera(R3Vector(-camera_dx * scene->BBox().DiagonalRadius(), 0, 0));
-    break;
+  case 'a': {
+    R3Vector moveVector = camera_dx * scene->BBox().DiagonalRadius() * viewer->Camera().Left();
+    if (movement == 0) {
+      viewer->TranslateCamera(moveVector);
+    }
+    else {
+      moveVector.SetZ(0.0);
+      scene->RadSource(current_rad_source)->Move(moveVector);
+    }
+
+    break; }
 
   case 'D':
-  case 'd':
-    viewer->TranslateCamera(R3Vector(camera_dx * scene->BBox().DiagonalRadius(), 0, 0));
-    break;
+  case 'd': {
+    R3Vector moveVector = camera_dx * scene->BBox().DiagonalRadius() * viewer->Camera().Right();
+    if (movement == 0) {
+      viewer->TranslateCamera(moveVector);
+    }
+    else {
+      moveVector.SetZ(0.0);
+      scene->RadSource(current_rad_source)->Move(moveVector);
+    }
+
+    break; }
 
   case 'W':
-  case 'w':
-    viewer->TranslateCamera(R3Vector(0, camera_dy * scene->BBox().DiagonalRadius(), 0));
-    break;
+  case 'w': {
+    R3Vector moveVector = camera_dx * scene->BBox().DiagonalRadius() * viewer->Camera().Up();
+    if (movement == 0) {
+      viewer->TranslateCamera(moveVector);
+    }
+    else {
+      moveVector.SetZ(0.0);
+      scene->RadSource(current_rad_source)->Move(moveVector);
+    }
+
+    break; }
 
   case 'S':
-  case 's':
-    viewer->TranslateCamera(R3Vector(0, -camera_dy * scene->BBox().DiagonalRadius(), 0));
-    break;
+  case 's':{
+    R3Vector moveVector = camera_dx * scene->BBox().DiagonalRadius() * viewer->Camera().Down();
+    if (movement == 0) {
+      viewer->TranslateCamera(moveVector);
+    }
+    else {
+      moveVector.SetZ(0.0);
+      scene->RadSource(current_rad_source)->Move(moveVector);
+    }
+    break; }
 
   case 27: // ESCAPE
     GLUTStop();
@@ -841,6 +926,8 @@ int main(int argc, char **argv)
 
   else {
     initGrid(scene);
+    num_rad_sources = scene->NRadSources();
+
     // Initialize GLUT
     GLUTInit(&argc, argv);
 

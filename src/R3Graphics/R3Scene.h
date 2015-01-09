@@ -26,7 +26,9 @@ public:
   R3SceneNode *Node(int k) const;
   R3SceneNode *Root(void) const;
   int NLights(void) const;
+  int NRadSources(void) const;
   R3Light *Light(int k) const;
+  Radiator *RadSource(int k) const;
   const R3Camera& Camera(void) const;
   const R2Viewport& Viewport(void) const;
   const R3Viewer& Viewer(void) const;
@@ -39,6 +41,7 @@ public:
   void InsertLight(R3Light *light);
   void RemoveLight(R3Light *light);
   void InsertRadiator(Radiator *r);
+  void RemoveRadiator(Radiator *r);
   void SetCamera(const R3Camera& viewer);
   void SetViewport(const R2Viewport& viewport);
   void SetViewer(const R3Viewer& viewer);
@@ -136,7 +139,12 @@ NLights(void) const
   return lights.NEntries();
 }
 
-
+inline int R3Scene::
+NRadSources(void) const
+{
+  // Return number of radiation sources
+  return rad_sources.NEntries();
+}
 
 inline R3Light *R3Scene::
 Light(int k) const
@@ -145,7 +153,12 @@ Light(int k) const
   return lights.Kth(k);
 }
 
-
+inline Radiator *R3Scene::
+RadSource(int k) const
+{
+  // Return kth radiation source
+  return rad_sources.Kth(k);
+}
 
 inline const R3Camera& R3Scene::
 Camera(void) const
