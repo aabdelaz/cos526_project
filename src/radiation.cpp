@@ -241,7 +241,7 @@ DrawSources(R3Scene *scene)
   double radius = scene->BBox().DiagonalRadius() * grid_point_radius * 3;
   for (int i = 0; i < scene->NRadSources(); i++) {
     Radiator *source = scene->RadSource(i);
-    if (i == current_rad_source)
+    if ((movement) && (i == current_rad_source))
       RNLoadRgb(RNRgb(1.0,0.0,1.0));
     else
       RNLoadRgb(RNRgb(0.0,1.0,1.0));
