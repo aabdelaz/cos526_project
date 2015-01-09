@@ -5,6 +5,7 @@
 
 class Radiator {
     public:
+        R3Point GetPosition(void) { return position; }  
         Radiator(R3Point &p, double s) : strength(s), position(p) {};
         ~Radiator(void);
         void SetPosition(R3Point &p)

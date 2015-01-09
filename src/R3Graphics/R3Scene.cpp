@@ -152,7 +152,6 @@ Intersects(const R3Ray& ray,
 }
 
 
-
 void R3Scene::
 Draw(const R3DrawFlags draw_flags, RNBoolean set_camera, RNBoolean set_lights) const
 {
@@ -912,7 +911,7 @@ ReadPrinceton(R3Scene *scene, R3SceneNode *node, const char *filename)
       }
 
       // Create source
-      Radiator *source = new Radiator(p1, s);
+      Radiator *source = new Radiator(s, p1);
 
       // Insert into scene
       scene->InsertRadiator(source);
