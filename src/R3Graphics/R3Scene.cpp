@@ -146,21 +146,6 @@ Intersects(const R3Ray& ray,
   return TRUE;
 }
 
-// returns optical path length
-RNScalar R3Scene::
-OpticalPathLength(R3Point grid_point, Radiator source, RNScalar &distance)
-{
-  // Intersect with root node
-  if (!root->Intersects(ray, hit_node, hit_element, hit_shape, hit_point, hit_normal, hit_t)) return FALSE;
-
-  // Normalize normal vector
-  if (hit_normal) hit_normal->Normalize();
-
-  // Return hit
-  return TRUE;
-}
-
-
 
 void R3Scene::
 Draw(const R3DrawFlags draw_flags, RNBoolean set_camera, RNBoolean set_lights) const
