@@ -26,6 +26,7 @@ static double grid_dx;
 static double grid_dy;
 static double grid_x0;
 static double grid_y0;
+static double grid_scale = 1.0;
 
 // GLUT variables 
 
@@ -40,6 +41,8 @@ static int GLUTmodifiers = 0;
 static int movement = 0;
 static int current_rad_source = 0;
 static int num_rad_sources = 0;
+static int moving = 0;
+// 1 = left, 2 = right, 3 = up, 4 = down
 static double camera_dx = 0.02;
 static double camera_dy = 0.02;
 
@@ -70,7 +73,7 @@ static int show_rays = 0;
 static int show_frame_rate = 0;
 static int show_grid = 1;
 
-
+static void initGridValues(R3Scene *scene);
 
 static void initGrid(R3Scene *scene)
 {
@@ -87,8 +90,7 @@ static void initGrid(R3Scene *scene)
       grid_y0, grid_dy, grid_y0 + (grid_ny - 1) * grid_dy);
   }
   grid = new double[grid_nx * grid_ny];
-  for (int i = 0; i < grid_nx * grid_ny; i++)
-    grid[i] = 0;
+  initGridValues(scene);
 }
 
 /* TODO: inline these? */
@@ -104,12 +106,29 @@ static RNScalar getGridValue(int ix, int iy)
 
 static void setGridValue(RNScalar value, int ix, int iy)
 {
-  grid[ix * grid_ny + iy] = value;
+  grid[ix * grid_ny + iy] = value * grid_scale;
+}
+
+static void incGridValue(RNScalar inc, int ix, int iy)
+{
+  grid[ix * grid_ny + iy] += inc * grid_scale;
+}
+
+// sets 0.5 to the arithmetic mean
+static void NormalizeGridScale(void)
+{
+  double sum = 0;
+  for (int i = 0; i < grid_nx * grid_ny; i++)
+    sum += grid[i];
+  sum /= 2 * grid_nx * grid_ny;
+  for (int i = 0; i < grid_nx * grid_ny; i++)
+    grid[i] /= sum;
+  grid_scale /= sum;
 }
 
 // returns distance from source to a point 
-static RNScalar source2pointDistance(R3Point point, Radiator source) {
-    return (point - source.GetPosition()).Length();
+static RNScalar source2pointDistance(R3Point point, Radiator &source) {
+    return (point - source.Position()).Length();
 }
 
 RNScalar opticalPath(R3Ray &ray, R3Scene *scene, R3Point source_point, RNBoolean in) {
@@ -139,12 +158,57 @@ RNScalar opticalPath(R3Ray &ray, R3Scene *scene, R3Point source_point, RNBoolean
 }
 
 // returns optical path length
-static RNScalar opticalPath(R3Point point, Radiator source, R3Scene *scene) {
-    R3Ray ray(source.GetPosition(), point);
+static RNScalar opticalPath(R3Point point, Radiator &source, R3Scene *scene) {
+    R3Ray ray(source.Position(), point);
 
     RNBoolean in = FALSE;
-    return opticalPath(ray, scene, source.GetPosition(), in);
+    return opticalPath(ray, scene, source.Position(), in);
 
+}
+
+static RNScalar strength(R3Point point, Radiator &source, R3Scene *scene)
+{
+  RNScalar r = source2pointDistance(point, source);
+  return exp(-opticalPath(point, source, scene)) / (r * r);
+}
+
+
+// adds radiator strength from source to the strength grid
+
+static void SubtractStrength(Radiator &source, R3Scene *scene)
+{
+  for (int i = 0; i < grid_nx; i++)
+    for (int j = 0; j < grid_ny; j++)
+      incGridValue(-strength(getGridPosition(i,j), source, scene),i,j);
+}
+
+static void UpdateStrength(Radiator &source, R3Scene *scene)
+{
+  for (int i = 0; i < grid_nx; i++)
+    for (int j = 0; j < grid_ny; j++)
+      incGridValue(strength(getGridPosition(i,j), source, scene),i,j);
+}
+
+// initializes grid with source strengths
+
+static void initGridValues(R3Scene *scene)
+{
+  for (int i = 0; i < grid_nx * grid_ny; i++)
+    grid[i] = 0;
+  for (int i = 0; i < scene->NRadSources(); i++)
+  {
+    Radiator &source = *(scene->RadSource(i));
+    UpdateStrength(source, scene);
+  }
+  NormalizeGridScale();
+}
+
+// 
+static void MoveRadiator(Radiator *source, R3Vector displacement, R3Scene *scene)
+{
+  SubtractStrength(*source, scene);
+  source->Move(displacement);
+  UpdateStrength(*source, scene);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -384,14 +448,11 @@ DrawRays(R3Scene *scene)
 static void 
 DrawSphere(R3Scene *scene, R3Point position, RNScalar value)
 {
-  
-#ifdef NDEBUG
-  assert(value >= 0.0);
-  assert(value <= 1.0);
-#endif
-
   double radius = grid_point_radius * scene->BBox().DiagonalRadius();
-
+  if (value > 1.0)
+    value = 1.0;
+  if (value < 0.0)
+    value = 0.0;
   /*glColor3d(0.0, value, 1.0 - value);
 
   GLfloat c[4];
@@ -730,7 +791,7 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     }
     else {
       moveVector.SetZ(0.0);
-      scene->RadSource(current_rad_source)->Move(moveVector);
+      MoveRadiator(scene->RadSource(current_rad_source), moveVector, scene);
     }
 
     break; }
@@ -743,7 +804,7 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     }
     else {
       moveVector.SetZ(0.0);
-      scene->RadSource(current_rad_source)->Move(moveVector);
+      MoveRadiator(scene->RadSource(current_rad_source), moveVector, scene);
     }
 
     break; }
@@ -756,7 +817,7 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     }
     else {
       moveVector.SetZ(0.0);
-      scene->RadSource(current_rad_source)->Move(moveVector);
+      MoveRadiator(scene->RadSource(current_rad_source), moveVector, scene);
     }
 
     break; }
@@ -769,7 +830,7 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     }
     else {
       moveVector.SetZ(0.0);
-      scene->RadSource(current_rad_source)->Move(moveVector);
+      MoveRadiator(scene->RadSource(current_rad_source), moveVector, scene);
     }
     break; }
 
