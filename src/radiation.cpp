@@ -108,6 +108,11 @@ static RNScalar getGridValue(int ix, int iy)
   return grid[ix * grid_ny + iy];
 }
 
+static RNScalar getOptPathValue(int ix, int iy)
+{
+  return optical_paths[ix * grid_ny + iy];
+}
+
 static void setGridValue(RNScalar value, int ix, int iy)
 {
   grid[ix * grid_ny + iy] = value * grid_scale;
@@ -116,6 +121,11 @@ static void setGridValue(RNScalar value, int ix, int iy)
 static void incGridValue(RNScalar inc, int ix, int iy)
 {
   grid[ix * grid_ny + iy] += inc * grid_scale;
+}
+
+static void incOptPathValue(RNScalar inc, int ix, int iy)
+{
+  optical_paths[ix * grid_ny + iy] += inc;
 }
 
 // sets 0.5 to the arithmetic mean
@@ -142,23 +152,23 @@ RNScalar opticalPath(R3Ray &ray, R3Scene *scene, R3Point source_point, RNBoolean
 // returns optical path length to point
 static RNScalar opticalPath(R3Point point, Radiator &source, R3Scene *scene)
 {
-
+  
 }
 
-static RNScalar strength(R3Point point, Radiator &source, R3Scene *scene)
+static RNScalar strength(int ix, int iy, Radiator &source)
 {
-  RNScalar r = source2pointDistance(point, source);
-  return exp(-opticalPath(point, source, scene)) / (r * r);
+  RNScalar r = source2pointDistance(getGridPosition(ix, iy), source);
+  return exp(-getOptPathValue(ix, iy)) / (r * r);
 }
 
 /* Helpful function */
-static void GetBoundingVertices(R3Box &wall, R3Vector *v1, R3Vector *v2, R3Vector *v3, R3Vector *v4)
+static void GetBoundingVertices(R3Box &wall, R3Affine &transformation, R3Vector *v1, R3Vector *v2, R3Vector *v3, R3Vector *v4)
 {
-
+  
 }
 
 /* Ameera */
-static void GetBoundingVectors(R3Box &wall, R3Point source_point, R3Vector *v1, R3Vector *v2)
+static void GetBoundingVectors(R3Box &wall, R3Affine &transformation, R3Point source_point, R3Vector *v1, R3Vector *v2)
 {
 
 }
@@ -169,22 +179,66 @@ static RNBoolean InBounds(R3Vector v1, R3Vector v2, R3Point source_point, R3Poin
 
 }
 
-static void UpdatePathLength(int i, int j, R3Point v1, R3Point v2, R3Point v3, R3Point v4, R3Point source_point)
+static void UpdatePathLength(int ix, int iy, R3Point v1, R3Point v2, R3Point v3, R3Point v4, R3Point source_point)
 {
 
 }
 // adds radiator strength from source to the strength grid
 
-static void UpdateStrength(R3Box &wall, Radiator &source, R3Scene *scene)
+static void CalculatePathsWall(R3Box &wall, R3Affine &transformation, Radiator &source)
 {
 
+}
+
+static void CalculatePaths(Radiator &source, R3Scene *scene)
+{
+
+}
+
+static void SubtractStrength(Radiator &source, R3Scene *scene)
+{
+  optical_paths = new double[grid_nx * grid_ny];
+  for (int i = 0; i < grid_nx * grid_ny; i++)
+    optical_paths[i] = 0;
+  CalculatePaths(source, scene);
+  for (int i = 0; i < grid_nx; i++)
+    for (int j = 0; j < grid_ny; j++)
+      incGridValue(-strength(i,j,source),i,j);
+  delete [] optical_paths;
 }
 
 static void UpdateStrength(Radiator &source, R3Scene *scene)
 {
-
+  optical_paths = new double[grid_nx * grid_ny];
+  for (int i = 0; i < grid_nx * grid_ny; i++)
+    optical_paths[i] = 0;
+  CalculatePaths(source, scene);
+  for (int i = 0; i < grid_nx; i++)
+    for (int j = 0; j < grid_ny; j++)
+      incGridValue(strength(i,j,source),i,j);
+  delete [] optical_paths;
 }
 
+static void traverse_tree(R3SceneNode *node, R3Affine trans, Radiator& source, void (*callback)(R3Box &wall, R3Affine &transformation, Radiator &source))
+{
+  trans.Transform(node->Transformation());
+  for (int i = 0; i < node->NElements(); i++)
+    for (int j = 0; j < node->Element(i)->NShapes(); j++)
+      if (node->Element(i)->Shape(j)->ClassID() == R3Box::CLASS_ID())
+      {
+        if (print_verbose)
+          printf("Hit box!\n");
+        callback(*((R3Box*) node->Element(i)->Shape(j)),trans, source);
+      }
+  for (int i = 0; i < node->NChildren(); i++)
+    traverse_tree(node->Child(i), trans, source, callback);
+}
+
+static void traverse_tree(R3SceneNode *root, Radiator& source, void (*callback)(R3Box &wall, R3Affine &transformation, Radiator &source))
+{
+   R3Affine trans = R3identity_affine;
+   traverse_tree(root, trans, source, callback);
+}
 
 // initializes grid with source strengths
 
@@ -198,7 +252,11 @@ static void initGridValues(R3Scene *scene)
     UpdateStrength(source, scene);
   }
   NormalizeGridScale();
+
+  traverse_tree(scene->Root(), *(scene->RadSource(0)), CalculatePathsWall);
 }
+
+
 
 // 
 static void MoveRadiator(Radiator *source, R3Vector displacement, R3Scene *scene)
