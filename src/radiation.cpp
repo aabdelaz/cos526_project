@@ -142,26 +142,35 @@ RNScalar opticalPath(R3Ray &ray, R3Scene *scene, R3Point source_point, RNBoolean
 
     RNBoolean intersects = scene->Intersects(ray, &node, &element, 
                 &shape, &point, &normal, &t); 
-
-    // if in is true we assume that our ray intersected with the scene
-    RNScalar mu = in ? element->Material()->Brdf()->IndexOfRefraction() : 1;
-
+    // if in is true we assume that our ray intersected with the scene. subtract 1 from IoR
+    RNScalar mu = in ? (element->Material()->Brdf()->IndexOfRefraction() - 1): 0;
+#if 0
+    // debug
+    if (print_verbose)
+    {
+      printf("In: %d, IoR: %f: from (%.3f,%.3f,%.3f) to (%.3f,%.3f,%.3f)\n", in, element->Material()->Brdf()->IndexOfRefraction(),
+        ray.Start().X(), ray.Start().Y(), ray.Start().Z(), point.X(),point.Y(), point.Z());
+      printf("t: %.3f; intersects: %d; ray.T: %.3f\n", t, intersects, ray.T(source_point));
+    }
+#endif
     // in this case we have that we have traced our way to the 
     // destination point, and we need not recurse 
     if (!intersects || t > ray.T(source_point)) {
        return (ray.Start() - source_point).Length()*mu;
     }  
 
-    R3Ray newRay(ray.Start() + epsilon*ray.Vector(), source_point);
+    R3Ray newRay(point + epsilon*ray.Vector(), source_point);
+
     return (ray.Start() - point).Length()*mu +
         opticalPath(newRay, scene, source_point, !in);  
 }
 
 // returns optical path length
 static RNScalar opticalPath(R3Point point, Radiator &source, R3Scene *scene) {
-    R3Ray ray(source.Position(), point);
+    R3Ray ray(point, source.Position());
 
     RNBoolean in = FALSE;
+
     return opticalPath(ray, scene, source.Position(), in);
 
 }
