@@ -170,7 +170,7 @@ static void GetBoundingVertices(R3Box &wall, R3Affine &transformation, R3Vector 
 /* Ameera */
 static void GetBoundingVectors(R3Box &wall, R3Affine &transformation, R3Point source_point, R3Vector *v1, R3Vector *v2)
 {
-
+  
 }
 
 /* Ameera */
@@ -227,7 +227,15 @@ static void traverse_tree(R3SceneNode *node, R3Affine trans, Radiator& source, v
       if (node->Element(i)->Shape(j)->ClassID() == R3Box::CLASS_ID())
       {
         if (print_verbose)
-          printf("Hit box!\n");
+        {
+          printf("Hit box! Transformation: \n");
+          printf("%.3f %.3f %.3f %.3f\n%.3f %.3f %.3f %.3f\n", trans.Matrix()[0][0],
+            trans.Matrix()[0][1],trans.Matrix()[0][2],trans.Matrix()[0][3],trans.Matrix()[1][0],
+            trans.Matrix()[1][1],trans.Matrix()[1][2],trans.Matrix()[1][3]);
+          printf("%.3f %.3f %.3f %.3f\n%.3f %.3f %.3f %.3f\n", trans.Matrix()[2][0],
+            trans.Matrix()[2][1],trans.Matrix()[2][2],trans.Matrix()[2][3],trans.Matrix()[3][0],
+            trans.Matrix()[3][1],trans.Matrix()[3][2],trans.Matrix()[3][3]);
+        }
         callback(*((R3Box*) node->Element(i)->Shape(j)),trans, source);
       }
   for (int i = 0; i < node->NChildren(); i++)
