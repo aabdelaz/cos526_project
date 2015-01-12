@@ -46,6 +46,9 @@ static int moving = 0;
 static double camera_dx = 0.02;
 static double camera_dy = 0.02;
 
+// ray_tracing
+static int max_layer = 15;
+
 #if 0
 // FPS
 static int fpsmode = 0;
@@ -131,19 +134,24 @@ static RNScalar source2pointDistance(R3Point point, Radiator &source) {
     return (point - source.Position()).Length();
 }
 
-RNScalar opticalPath(R3Ray &ray, R3Scene *scene, R3Point source_point, RNBoolean in) {
-    R3SceneNode *node;
-    R3SceneElement *element;
-    R3Shape *shape;
+RNScalar opticalPath(R3Ray &ray, R3Scene *scene, R3Point source_point, RNBoolean in, int layer) {
+    R3SceneNode *node = NULL;
+    R3SceneElement *element = NULL;
+    R3Shape *shape = NULL;
     R3Point point;
     R3Vector normal;
     RNScalar t;    
     RNScalar epsilon = 1e-15;
+    RNScalar mu = 0;
+    assert(scene);
 
     RNBoolean intersects = scene->Intersects(ray, &node, &element, 
                 &shape, &point, &normal, &t); 
     // if in is true we assume that our ray intersected with the scene. subtract 1 from IoR
-    RNScalar mu = in ? (element->Material()->Brdf()->IndexOfRefraction() - 1): 0;
+    if (element && element->Material())
+      mu = in ? (element->Material()->Brdf()->IndexOfRefraction() - 1): 0;
+    else if (print_verbose)
+      printf("Lack of element or material!\n");
 #if 0
     // debug
     if (print_verbose)
@@ -155,14 +163,17 @@ RNScalar opticalPath(R3Ray &ray, R3Scene *scene, R3Point source_point, RNBoolean
 #endif
     // in this case we have that we have traced our way to the 
     // destination point, and we need not recurse 
-    if (!intersects || t > ray.T(source_point)) {
+    if (!intersects || t > ray.T(source_point) || layer >= max_layer) {
+      if (print_verbose && (layer >= max_layer))
+        printf("Hit max layer!\n");
+
        return (ray.Start() - source_point).Length()*mu;
     }  
 
     R3Ray newRay(point + epsilon*ray.Vector(), source_point);
 
     return (ray.Start() - point).Length()*mu +
-        opticalPath(newRay, scene, source_point, !in);  
+        opticalPath(newRay, scene, source_point, !in, layer + 1);  
 }
 
 // returns optical path length
@@ -171,7 +182,7 @@ static RNScalar opticalPath(R3Point point, Radiator &source, R3Scene *scene) {
 
     RNBoolean in = FALSE;
 
-    return opticalPath(ray, scene, source.Position(), in);
+    return opticalPath(ray, scene, source.Position(), in, 0);
 
 }
 
