@@ -20,7 +20,6 @@ static int print_verbose = 0;
 // Grid
 static double grid_point_radius = 0.00625;
 static double* grid;
-static double* optical_paths;
 static int grid_nx = 10;
 static int grid_ny = 10;
 static double grid_dx;
@@ -136,12 +135,54 @@ static RNScalar source2pointDistance(R3Point point, Radiator &source) {
 }
 
 RNScalar opticalPath(R3Ray &ray, R3Scene *scene, R3Point source_point, RNBoolean in, int layer) {
+    R3SceneNode *node = NULL;
+    R3SceneElement *element = NULL;
+    R3Shape *shape = NULL;
+    R3Point point;
+    R3Vector normal;
+    RNScalar t;    
+    RNScalar epsilon = 1e-15;
+    RNScalar mu = 0;
+    assert(scene);
 
+    RNBoolean intersects = scene->Intersects(ray, &node, &element, 
+                &shape, &point, &normal, &t); 
+    // if in is true we assume that our ray intersected with the scene. subtract 1 from IoR
+    if (element && element->Material())
+      mu = in ? (element->Material()->Brdf()->IndexOfRefraction() - 1): 0;
+    else if (print_verbose)
+      printf("Lack of element or material!\n");
+#if 0
+    // debug
+    if (print_verbose)
+    {
+      printf("In: %d, IoR: %f: from (%.3f,%.3f,%.3f) to (%.3f,%.3f,%.3f)\n", in, element->Material()->Brdf()->IndexOfRefraction(),
+        ray.Start().X(), ray.Start().Y(), ray.Start().Z(), point.X(),point.Y(), point.Z());
+      printf("t: %.3f; intersects: %d; ray.T: %.3f\n", t, intersects, ray.T(source_point));
+    }
+#endif
+    // in this case we have that we have traced our way to the 
+    // destination point, and we need not recurse 
+    if (!intersects || t > ray.T(source_point) || layer >= max_layer) {
+      if (print_verbose && (layer >= max_layer))
+        printf("Hit max layer!\n");
+
+       return (ray.Start() - source_point).Length()*mu;
+    }  
+
+    R3Ray newRay(point + epsilon*ray.Vector(), source_point);
+
+    return (ray.Start() - point).Length()*mu +
+        opticalPath(newRay, scene, source_point, !in, layer + 1);  
 }
 
-// returns optical path length to point
-static RNScalar opticalPath(R3Point point, Radiator &source, R3Scene *scene)
-{
+// returns optical path length
+static RNScalar opticalPath(R3Point point, Radiator &source, R3Scene *scene) {
+    R3Ray ray(point, source.Position());
+
+    RNBoolean in = FALSE;
+
+    return opticalPath(ray, scene, source.Position(), in, 0);
 
 }
 
@@ -151,40 +192,22 @@ static RNScalar strength(R3Point point, Radiator &source, R3Scene *scene)
   return exp(-opticalPath(point, source, scene)) / (r * r);
 }
 
-/* Helpful function */
-static void GetBoundingVertices(R3Box &wall, R3Vector *v1, R3Vector *v2, R3Vector *v3, R3Vector *v4)
-{
 
-}
-
-/* Ameera */
-static void GetBoundingVectors(R3Box &wall, R3Point source_point, R3Vector *v1, R3Vector *v2)
-{
-
-}
-
-/* Ameera */
-static RNBoolean InBounds(R3Vector v1, R3Vector v2, R3Point source_point, R3Point grid_point)
-{
-
-}
-
-static void UpdatePathLength(int i, int j, R3Point v1, R3Point v2, R3Point v3, R3Point v4, R3Point source_point)
-{
-
-}
 // adds radiator strength from source to the strength grid
 
-static void UpdateStrength(R3Box &wall, Radiator &source, R3Scene *scene)
+static void SubtractStrength(Radiator &source, R3Scene *scene)
 {
-
+  for (int i = 0; i < grid_nx; i++)
+    for (int j = 0; j < grid_ny; j++)
+      incGridValue(-strength(getGridPosition(i,j), source, scene),i,j);
 }
 
 static void UpdateStrength(Radiator &source, R3Scene *scene)
 {
-
+  for (int i = 0; i < grid_nx; i++)
+    for (int j = 0; j < grid_ny; j++)
+      incGridValue(strength(getGridPosition(i,j), source, scene),i,j);
 }
-
 
 // initializes grid with source strengths
 
