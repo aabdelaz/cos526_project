@@ -10,7 +10,7 @@
 # Executable name
 ########################################################################
 
-EXE=src/photonmap
+EXE=src/radiation src/radiationbf
 
 
 
@@ -29,8 +29,7 @@ output/%.jpg: input/%.scn
 ########################################################################
 
 all: \
-	$(EXE) \
-        output/ico.jpg
+	$(EXE)
 	
 clean:
 	cd src; make clean

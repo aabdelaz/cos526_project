@@ -11,9 +11,11 @@
 RAD_SRCS=radiation.cpp
 RAD_OBJS=$(RAD_SRCS:.cpp=.o)
 
+RADBF_SRCS=radiationbf.cpp
+RADBF_OBJS=$(RADBF_SRCS:.cpp=.o)
+
 KDTVIEW_SRCS=kdtview.cpp
 KDTVIEW_OBJS=$(KDTVIEW_SRCS:.cpp=.o)
-
 
 
 #
@@ -83,6 +85,9 @@ all: $(PKG_LIBS) radiation kdtview
 
 radiation: $(LIBS) $(RAD_OBJS) 
 	    $(CC) -o radiation $(CPPFLAGS) $(LDFLAGS) $(RAD_OBJS) $(PKG_LIBS) $(OPENGL_LIBS) -lm
+
+radiationbf: $(LIBS) $(RADBF_OBJS) 
+	    $(CC) -o radiationbf $(CPPFLAGS) $(LDFLAGS) $(RADBF_OBJS) $(PKG_LIBS) $(OPENGL_LIBS) -lm
 
 kdtview: $(LIBS) $(KDTVIEW_OBJS) 
 	    $(CC) -o kdtview $(CPPFLAGS) $(LDFLAGS) $(KDTVIEW_OBJS) $(PKG_LIBS) $(OPENGL_LIBS) -lm
