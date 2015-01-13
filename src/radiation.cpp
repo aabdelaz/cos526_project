@@ -162,9 +162,28 @@ static RNScalar strength(int ix, int iy, Radiator &source)
 }
 
 /* Helpful function */
-static void GetBoundingVertices(R3Box &wall, R3Affine &transformation, R3Vector *v1, R3Vector *v2, R3Vector *v3, R3Vector *v4)
+static void GetBoundingVertices(R3Box &wall, R3Affine &transformation, R3Point *v1, R3Point *v2, R3Point *v3, R3Point *v4)
 {
-  
+  assert(v1);
+  assert(v2);
+  assert(v3);
+  assert(v4);
+  RNScalar x1 = wall.XMin();
+  RNScalar x2 = wall.XMax();
+  RNScalar y1 = wall.YMin();
+  RNScalar y2 = wall.YMax();
+  R3Point vert1 = R3Point(x1,y1,0);
+  R3Point vert2 = R3Point(x2,y1,0);
+  R3Point vert3 = R3Point(x2,y2,0);
+  R3Point vert4 = R3Point(x1,y2,0);
+  transformation.Apply(vert1);
+  transformation.Apply(vert2);
+  transformation.Apply(vert3);
+  transformation.Apply(vert4);
+  *v1 = vert1;
+  *v2 = vert2;
+  *v3 = vert3;
+  *v4 = vert4;
 }
 
 /* Ameera */
@@ -250,7 +269,16 @@ static void UpdatePathLength(int ix, int iy, R3Point v1, R3Point v2, R3Point v3,
 
 static void CalculatePathsWall(R3Box &wall, R3Affine &transformation, Radiator &source)
 {
-
+  R3Point v1,v2,v3,v4;
+  GetBoundingVertices(wall, transformation, &v1, &v2, &v3, &v4);
+  if (print_verbose)
+  {
+    printf("Bounding vertices:\n");
+    printf("(%.3f,%.3f,%.3f)\n(%.3f,%.3f,%.3f)\n", v1.X(),v1.Y(),v1.Z(),
+      v2.X(),v2.Y(),v2.Z());
+    printf("(%.3f,%.3f,%.3f)\n(%.3f,%.3f,%.3f)\n", v3.X(),v3.Y(),v3.Z(),
+      v4.X(),v4.Y(),v4.Z());
+  }
 }
 
 static void CalculatePaths(Radiator &source, R3Scene *scene)
