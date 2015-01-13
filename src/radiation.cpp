@@ -187,40 +187,225 @@ static void GetBoundingVertices(R3Box &wall, R3Affine &transformation, R3Point *
 }
 
 /* Ameera */
-static void GetBoundingVectors(R3Box &wall, R3Affine &transformation, R3Point source_point, R3Vector *v1, R3Vector *v2)
+// input boundaries of wall in vert1 vert2 vert3 vert4 (counter-clockwise order);
+//   output vertices into v1 and v2
+static void GetBoundingVectors(R3Point vert1, R3Point vert2, R3Point vert3, R3Point vert4,
+  R3Point source_point, R3Vector *v1, R3Vector *v2)
 {
-  
+
+
 }
 
 /* Ameera */
-static RNBoolean InBounds(R3Vector v1, R3Vector v2, R3Point source_point, R3Point grid_point)
+static RNBoolean InBounds(const R3Vector &v1, const R3Vector &v2, 
+  const R3Point &source_point, const R3Point &grid_point)
 {
 
 }
 
-static void UpdatePathLength(int ix, int iy, R3Point v1, R3Point v2, R3Point v3, R3Point v4, R3Point source_point)
+// returns a distance from source to edge. Negative if edge behind source. Returns negative-1 if beyond edge
+static RNScalar SourceDistToEdge(const R3Point &endpt1, const R3Point &endpt2, 
+  const R3Point &source, const R3Point &dest)
 {
+  RNScalar t1, t2;
+  RNScalar a1, a2, b1, b2, c1, c2, d1, d2;
+  // set a + t1 ( b-a) = c + t2 (d-c) and solve for t1 and t2
+  a1 = endpt1.X();
+  a2 = endpt1.Y();
+  b1 = endpt2.X();
+  b2 = endpt2.Y();
+  c1 = source.X();
+  c2 = source.Y();
+  d1 = dest.X();
+  d2 = dest.Y();
+  RNScalar denom = a2 * d1 - a1 * d2 + a1 * c2 - a2 * c1 + b2 * c1 - b1 * c2 + b1 * d2 - b2 * d1;
+  if (RNIsZero(denom))
+    return -1;
+  t2 = a1 * c2 - a2 * c1 + c1 * b2 - c2 * b1 + a2 * b1 - a1 * b2;
+  t2 /= denom;
+  t1 = a1 * c2 - a2 * c1 + a2 * d1 - a1 * d2 + c1 * d2 - c2 * d1;
+  t1 /= denom;
+  if (RNIsNegative(t1) || RNIsPositive(t1 - 1.0))
+    return -1;
+  return t2 * (dest - source).Length();
+}
+
+// Given a grid point and vertices and source, update the optical path length
+static void UpdatePathLength(int ix, int iy, const R3Point &v1, const R3Point &v2, const R3Point &v3, 
+  const R3Point &v4, const R3Point &source_point, RNScalar mu)
+{
+  RNScalar dist1, dist2, dist3, dist4;
+  dist1 = SourceDistToEdge(v1, v2, getGridPosition(ix, iy), source_point);
+  dist2 = SourceDistToEdge(v2, v3, getGridPosition(ix, iy), source_point);
+  dist3 = SourceDistToEdge(v3, v4, getGridPosition(ix, iy), source_point);
+  dist4 = SourceDistToEdge(v4, v1, getGridPosition(ix, iy), source_point);
+  // either two negative, three negative, or four negative. If one negative, then really unlucky...
+  RNScalar sign = dist1 * dist2 * dist3 * dist4;
+  if (RNIsPositive(sign))
+  {
+    // four or two negative. must be outside wall or really unlucky and hit a corner.
+    // find the two positive distances
+    RNScalar d1, d2;
+    if (RNIsPositive(dist1))
+    {
+      d1 = dist1;
+      if (RNIsPositive(dist2))
+        d2 = dist2;
+      else if (RNIsPositive(dist3))
+        d2 = dist3;
+      else
+        d2 = dist4;
+    }
+    else if (RNIsPositive(dist2))
+    {
+      d1 = dist2;
+      if (RNIsPositive(dist3))
+        d2 = dist3;
+      else
+        d2 = dist4;
+    }
+    else if (RNIsPositive(dist3) || RNIsPositive(dist4))
+    {
+      d1 = dist3;
+      d2 = dist4;
+    }
+    else 
+    {
+      // do nothing if none positive
+      return;
+    }
+    // sort the two positive distances
+    if (d1 < d2)
+    {
+      RNScalar tmp = d1;
+      d1 = d2;
+      d2 = tmp;
+    }
+    // increment path
+    if (RNIsPositive(d1 - d2))
+      incOptPathValue((d1-d2) * mu, ix, iy);
+    else
+    {
+      incOptPathValue(((source_point - getGridPosition(ix, iy)).Length() - d1) * mu, ix, iy);
+      if (print_verbose)
+        printf("Really unlucky! Hit a corner.\n");
+    }
+
+  }
+  else
+  {
+    // one or three negative. Most likely three negative, but if one negative then must deal with it
+    RNScalar totlength = (source_point - getGridPosition(ix, iy)).Length();
+    RNScalar d1, d2;
+    d2 = -1;
+    if (RNIsPositive(dist1))
+    {
+      d1 = dist1;
+      if (RNIsPositive(dist2) && RNIsNotEqual(dist1,dist2))
+        d2 = dist2;
+      else if (RNIsPositive(dist3) && RNIsNotEqual(dist1,dist3))
+        d2 = dist3;
+      else if (RNIsPositive(dist4))
+        d2 = dist4;
+    }
+    else if (RNIsPositive(dist2))
+    {
+      d1 = dist2;
+      if (RNIsPositive(dist3) && RNIsNotEqual(dist2,dist3))
+        d2 = dist3;
+      else if (RNIsPositive(dist4))
+        d2 = dist4;
+    }
+    else if (RNIsPositive(dist3))
+    {
+      d1 = dist3;
+    }
+    else
+    {
+      d1 = dist4;
+    }
+    if (RNIsPositive(d2))
+    {
+      if (print_verbose)
+        printf("Really unlucky! Hit a corner and another edge!\n");
+      if (d1 < d2)
+      {
+        RNScalar tmp = d1;
+        d1 = d2;
+        d2 = tmp;
+      }
+      incOptPathValue((d1-d2) * mu, ix, iy);
+    }
+    else
+    {
+      incOptPathValue((totlength-d1) * mu, ix, iy);
+    }
+  }
 
 }
 // adds radiator strength from source to the strength grid
 
-static void CalculatePathsWall(R3Box &wall, R3Affine &transformation, Radiator &source)
+static void CalculatePathsWall(R3Box &wall, R3Affine &transformation, Radiator &source, RNScalar mu)
 {
   R3Point v1,v2,v3,v4;
+
+  R3Vector bv1, bv2;
+  R3Point source_pt = source.Position();
+  // get bounding vertices
   GetBoundingVertices(wall, transformation, &v1, &v2, &v3, &v4);
   if (print_verbose)
   {
-    printf("Bounding vertices:\n");
+    printf("Mu: %.3f; Bounding vertices:\n", mu);
     printf("(%.3f,%.3f,%.3f)\n(%.3f,%.3f,%.3f)\n", v1.X(),v1.Y(),v1.Z(),
       v2.X(),v2.Y(),v2.Z());
     printf("(%.3f,%.3f,%.3f)\n(%.3f,%.3f,%.3f)\n", v3.X(),v3.Y(),v3.Z(),
       v4.X(),v4.Y(),v4.Z());
   }
+
+  GetBoundingVectors(v1, v2, v3, v4, source_pt, &v1, &v2);
+
+  for (int i = 0; i < grid_nx; i++)
+    for (int j = 0; j < grid_ny; j++)
+      if (InBounds(bv1, bv2, source_pt, getGridPosition()))
+        UpdatePathLength(i, j, v1, v2, v3, v4, source_pt, mu);
+
 }
+
+// traversing scene tree to grab the walls
+static void traverse_tree(R3SceneNode *node, R3Affine trans, Radiator& source, void (*callback)(R3Box &wall, R3Affine &transformation, Radiator &source, RNScalar mu))
+{
+  trans.Transform(node->Transformation());
+  for (int i = 0; i < node->NElements(); i++)
+    for (int j = 0; j < node->Element(i)->NShapes(); j++)
+      if (node->Element(i)->Shape(j)->ClassID() == R3Box::CLASS_ID())
+      {
+        if (print_verbose)
+        {
+          printf("Hit box! Transformation: \n");
+          printf("%.3f %.3f %.3f %.3f\n%.3f %.3f %.3f %.3f\n", trans.Matrix()[0][0],
+            trans.Matrix()[0][1],trans.Matrix()[0][2],trans.Matrix()[0][3],trans.Matrix()[1][0],
+            trans.Matrix()[1][1],trans.Matrix()[1][2],trans.Matrix()[1][3]);
+          printf("%.3f %.3f %.3f %.3f\n%.3f %.3f %.3f %.3f\n", trans.Matrix()[2][0],
+            trans.Matrix()[2][1],trans.Matrix()[2][2],trans.Matrix()[2][3],trans.Matrix()[3][0],
+            trans.Matrix()[3][1],trans.Matrix()[3][2],trans.Matrix()[3][3]);
+        }
+        callback(*((R3Box*) node->Element(i)->Shape(j)),trans, source,
+          node->Element(i)->Material()->Brdf()->IndexOfRefraction());
+      }
+  for (int i = 0; i < node->NChildren(); i++)
+    traverse_tree(node->Child(i), trans, source, callback);
+}
+
+static void traverse_tree(R3SceneNode *root, Radiator& source, void (*callback)(R3Box &wall, R3Affine &transformation, Radiator &source, RNScalar mu))
+{
+   R3Affine trans = R3identity_affine;
+   traverse_tree(root, trans, source, callback);
+}
+
 
 static void CalculatePaths(Radiator &source, R3Scene *scene)
 {
-
+  traverse_tree(scene->Root(), source, CalculatePathsWall);
 }
 
 static void SubtractStrength(Radiator &source, R3Scene *scene)
@@ -247,35 +432,6 @@ static void UpdateStrength(Radiator &source, R3Scene *scene)
   delete [] optical_paths;
 }
 
-static void traverse_tree(R3SceneNode *node, R3Affine trans, Radiator& source, void (*callback)(R3Box &wall, R3Affine &transformation, Radiator &source))
-{
-  trans.Transform(node->Transformation());
-  for (int i = 0; i < node->NElements(); i++)
-    for (int j = 0; j < node->Element(i)->NShapes(); j++)
-      if (node->Element(i)->Shape(j)->ClassID() == R3Box::CLASS_ID())
-      {
-        if (print_verbose)
-        {
-          printf("Hit box! Transformation: \n");
-          printf("%.3f %.3f %.3f %.3f\n%.3f %.3f %.3f %.3f\n", trans.Matrix()[0][0],
-            trans.Matrix()[0][1],trans.Matrix()[0][2],trans.Matrix()[0][3],trans.Matrix()[1][0],
-            trans.Matrix()[1][1],trans.Matrix()[1][2],trans.Matrix()[1][3]);
-          printf("%.3f %.3f %.3f %.3f\n%.3f %.3f %.3f %.3f\n", trans.Matrix()[2][0],
-            trans.Matrix()[2][1],trans.Matrix()[2][2],trans.Matrix()[2][3],trans.Matrix()[3][0],
-            trans.Matrix()[3][1],trans.Matrix()[3][2],trans.Matrix()[3][3]);
-        }
-        callback(*((R3Box*) node->Element(i)->Shape(j)),trans, source);
-      }
-  for (int i = 0; i < node->NChildren(); i++)
-    traverse_tree(node->Child(i), trans, source, callback);
-}
-
-static void traverse_tree(R3SceneNode *root, Radiator& source, void (*callback)(R3Box &wall, R3Affine &transformation, Radiator &source))
-{
-   R3Affine trans = R3identity_affine;
-   traverse_tree(root, trans, source, callback);
-}
-
 // initializes grid with source strengths
 
 static void initGridValues(R3Scene *scene)
@@ -289,9 +445,7 @@ static void initGridValues(R3Scene *scene)
   }
   NormalizeGridScale();
 
-  traverse_tree(scene->Root(), *(scene->RadSource(0)), CalculatePathsWall);
 }
-
 
 
 // 
