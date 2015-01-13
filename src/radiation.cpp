@@ -273,8 +273,10 @@ static RNBoolean InBounds(const R3Vector &v1, const R3Vector &v2,
     
     double dot_ab = v1.Dot(b);
     double dot_ac = v1.Dot(v2);
-    if (dot_ab > dot_ac) return TRUE;
-    return FALSE; 
+    if (dot_ab < dot_ac) return FALSE;
+    double dot_cb = v2.Dot(b);
+    if (dot_cb < dot_ac) return FALSE;
+    else return TRUE;
 
 }
 
@@ -437,11 +439,11 @@ static void CalculatePathsWall(R3Box &wall, R3Affine &transformation, Radiator &
       v4.X(),v4.Y(),v4.Z());
   }
 
-  GetBoundingVectors(v1, v2, v3, v4, source_pt, &v1, &v2);
+  GetBoundingVectors(v1, v2, v3, v4, source_pt, &bv1, &bv2);
 
   for (int i = 0; i < grid_nx; i++)
     for (int j = 0; j < grid_ny; j++)
-      if (InBounds(bv1, bv2, source_pt, getGridPosition()))
+      if (InBounds(bv1, bv2, source_pt, getGridPosition(i,j)))
         UpdatePathLength(i, j, v1, v2, v3, v4, source_pt, mu);
 
 }
