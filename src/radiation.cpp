@@ -168,9 +168,69 @@ static void GetBoundingVertices(R3Box &wall, R3Affine &transformation, R3Vector 
 }
 
 /* Ameera */
+// this'll only work if source is outside the box
 static void GetBoundingVectors(R3Box &wall, R3Affine &transformation, R3Point source_point, R3Vector *v1, R3Vector *v2)
 {
-  
+    R3Point c[4];
+    c[0] = wall.Corner(0, 0, 0);
+    transformation.Apply(c[0]);  
+    c[0].SetZ(0);
+
+    c[1] = wall.Corner(0, 1, 0);
+    transformation.Apply(c[1]);  
+    c[1].SetZ(0);
+
+    c[2] = wall.Corner(1, 0, 0);
+    transformation.Apply(c[2]);  
+    c[2].SetZ(0);
+
+    c[3] = wall.Corner(1, 1, 0);
+    transformation.Apply(c[3]);  
+    c[3].SetZ(0);
+
+    R3Vector v[4];
+    for (int i = 0; i < 4; i++) v[i] = (c[i] - source_point).Normalize();
+
+    int q[4];
+    for (int i = 0; i < 4; i++) {
+        if (v[i].X() > 0 && v[i].Y() >= 0) q[i] = 1;
+        else if (v[i].X() <= 0 && v[i].Y() > 0) q[i] = 2;
+        else if (v[i].X() < 0 && v[i].Y() <= 0) q[i] = 3;
+        else if (v[i].X() >= 0 && v[i].Y() < 0) q[i] = 4;
+    }
+    
+   R3Vector min = v[0];
+   int minQ = q[0];
+   for (int i = 1; i < 4; i++) {
+        if (q[i] < minQ) { min = v[i]; minQ = q[i]; }
+        else if (q[i] == minQ) {
+            if (minQ == 1 || minQ == 4) {
+                if (v[i].Y() < min.Y()) { min = v[i]; minQ = q[i]; }
+            }
+            else {
+                if (v[i].Y() > min.Y()) { min = v[i]; minQ = q[i]; }
+            } 
+        }
+   } 
+
+   R3Vector max = v[0];
+   int maxQ = q[0];
+   for (int i = 1; i < 4; i++) {
+        if (q[i] > maxQ) { max = v[i]; maxQ = q[i]; }
+        else if (q[i] == maxQ) {
+            if (maxQ == 2 || maxQ == 3) {
+                if (v[i].Y() < max.Y()) { max = v[i]; maxQ = q[i]; }
+            }
+            else {
+                if (v[i].Y() > max.Y()) { max = v[i]; maxQ = q[i]; }
+            } 
+        }
+   } 
+
+   *v1 = min;
+   *v2 = max; 
+    
+
 }
 
 /* Ameera */
