@@ -1,7 +1,5 @@
 // Source file for the scene viewer program
 
-
-
 // Include files 
 
 #include "R3Graphics/R3Graphics.h"
@@ -57,7 +55,6 @@ static R3Camera FPSToggleCam;
 #endif
 
 
-
 // Application variables
 
 static R3Viewer *viewer = NULL;
@@ -97,7 +94,6 @@ static void initGrid(R3Scene *scene)
   initGridValues(scene);
 }
 
-/* TODO: inline these? */
 static R3Point getGridPosition(int ix, int iy)
 {
    return R3Point(grid_x0 + grid_dx * ix, grid_y0 + grid_dy * iy, 0.0);
@@ -113,10 +109,13 @@ static RNScalar getOptPathValue(int ix, int iy)
   return optical_paths[ix * grid_ny + iy];
 }
 
+#if 0
 static void setGridValue(RNScalar value, int ix, int iy)
 {
   grid[ix * grid_ny + iy] = value * grid_scale;
 }
+#endif
+
 
 static void incGridValue(RNScalar inc, int ix, int iy)
 {
@@ -199,23 +198,6 @@ static void GetBoundingVectors(R3Point vert1, R3Point vert2, R3Point vert3, R3Po
     c[1] = vert2;
     c[2] = vert3;
     c[3] = vert4;
-#if 0
-    c[0] = wall.Corner(0, 0, 0);
-    transformation.Apply(c[0]);  
-    c[0].SetZ(0);
-
-    c[1] = wall.Corner(0, 1, 0);
-    transformation.Apply(c[1]);  
-    c[1].SetZ(0);
-
-    c[2] = wall.Corner(1, 0, 0);
-    transformation.Apply(c[2]);  
-    c[2].SetZ(0);
-
-    c[3] = wall.Corner(1, 1, 0);
-    transformation.Apply(c[3]);  
-    c[3].SetZ(0);
-#endif
 
     R3Vector v[4];
     for (int i = 0; i < 4; i++) {
@@ -370,20 +352,13 @@ static void UpdatePathLength(int ix, int iy, const R3Point &v1, const R3Point &v
     if (RNIsPositive(d1 - d2))
     {
       incOptPathValue((d1-d2) * mu, ix, iy);
-#if 0
-      if (print_verbose)
-        printf("dest: (%.3f, %.3f)\n",getGridPosition(ix,iy).X(), getGridPosition(ix,iy).Y());
-#endif
-    }
+   }
     else
     {
       // inc by distance from source to wall
       RNScalar totlength = (source_point - getGridPosition(ix, iy)).Length();
       incOptPathValue((totlength - d1) * mu, ix, iy);
 
-#if 0
-      incOptPathValue(d1 * mu, ix, iy);
-#endif
       if (print_verbose)
         printf("Really unlucky! Hit a corner.\n");
     }
@@ -392,7 +367,6 @@ static void UpdatePathLength(int ix, int iy, const R3Point &v1, const R3Point &v
   else
   {
     // one or three negative. Most likely three negative, but if one negative then must deal with it
-
     RNScalar d1, d2;
     d2 = -1;
     if (RNIsPositive(dist1))
@@ -438,9 +412,6 @@ static void UpdatePathLength(int ix, int iy, const R3Point &v1, const R3Point &v
       // inc by distance from source to wall
       RNScalar totlength = (source_point - getGridPosition(ix, iy)).Length();
       incOptPathValue((totlength-d1) * mu, ix, iy);
-#if 0
-      incOptPathValue(d1 * mu, ix, iy);
-#endif
     }
   }
 
@@ -469,7 +440,7 @@ static void CalculatePathsWall(R3Box &wall, R3Affine &transformation, Radiator &
   if (!(InBounds(bv1, bv2, source_pt, v1) && InBounds(bv1, bv2, source_pt, v2) && InBounds(bv1, bv2, source_pt, v3)  && InBounds(bv1, bv2, source_pt, v4)  ))
   {
     source_inside = TRUE;
-    printf("Source inside wall! \n");
+    //printf("Source inside wall! \n");
   }
   for (int i = 0; i < grid_nx; i++)
     for (int j = 0; j < grid_ny; j++)
@@ -584,21 +555,6 @@ LoadLights(R3Scene *scene)
     light->Draw(i);
   }
 }
-
-
-
-#if 0
-
-static void 
-DrawText(const R3Point& p, const char *s)
-{
-  // Draw text string s and position p
-  glRasterPos3d(p[0], p[1], p[2]);
-  while (*s) glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *(s++));
-}
-  
-#endif
-
 
 
 static void 
@@ -1080,9 +1036,6 @@ void GLUTKeyboard(unsigned char key, int x, int y)
 
   case 'C':
   case 'c':
-#if 0
-    show_camera = !show_camera;
-#endif
     movement = 0;
     break;
 
@@ -1118,13 +1071,6 @@ void GLUTKeyboard(unsigned char key, int x, int y)
   case 'r':
     show_rays = !show_rays;
     break;
-
-#if 0
-  case 'S':
-  case 's':
-    show_shapes = !show_shapes;
-    break;
-#endif
 
   case 'T':
   case 't':
