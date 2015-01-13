@@ -189,7 +189,10 @@ static void GetBoundingVectors(R3Box &wall, R3Affine &transformation, R3Point so
     c[3].SetZ(0);
 
     R3Vector v[4];
-    for (int i = 0; i < 4; i++) v[i] = (c[i] - source_point).Normalize();
+    for (int i = 0; i < 4; i++) {
+        v[i] = c[i] - source_point;
+        v[i].Normalize();
+    }
 
     int q[4];
     for (int i = 0; i < 4; i++) {
