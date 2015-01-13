@@ -375,7 +375,10 @@ static void UpdatePathLength(int ix, int iy, const R3Point &v1, const R3Point &v
     }
     else
     {
+#if 0
       incOptPathValue(((source_point - getGridPosition(ix, iy)).Length() - d1) * mu, ix, iy);
+#endif
+      incOptPathValue(d1 * mu, ix, iy);
       if (print_verbose)
         printf("Really unlucky! Hit a corner.\n");
     }
@@ -384,7 +387,9 @@ static void UpdatePathLength(int ix, int iy, const R3Point &v1, const R3Point &v
   else
   {
     // one or three negative. Most likely three negative, but if one negative then must deal with it
+#if 0
     RNScalar totlength = (source_point - getGridPosition(ix, iy)).Length();
+#endif
     RNScalar d1, d2;
     d2 = -1;
     if (RNIsPositive(dist1))
@@ -427,7 +432,10 @@ static void UpdatePathLength(int ix, int iy, const R3Point &v1, const R3Point &v
     }
     else
     {
+#if 0
       incOptPathValue((totlength-d1) * mu, ix, iy);
+#endif
+      incOptPathValue(d1 * mu, ix, iy);
     }
   }
 
