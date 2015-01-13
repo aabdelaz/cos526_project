@@ -258,6 +258,13 @@ static void GetBoundingVectors(R3Box &wall, R3Affine &transformation, R3Point so
 /* Ameera */
 static RNBoolean InBounds(R3Vector v1, R3Vector v2, R3Point source_point, R3Point grid_point)
 {
+    R3Vector b = grid_point - source_point;
+    b.Normalize();
+    
+    double dot_ab = v1.Dot(b);
+    double dot_ac = v1.Dot(v2);
+    if (dot_ab > dot_ac) return TRUE;
+    return FALSE; 
 
 }
 
