@@ -366,7 +366,13 @@ static void UpdatePathLength(int ix, int iy, const R3Point &v1, const R3Point &v
     }
     // increment path
     if (RNIsPositive(d1 - d2))
+    {
       incOptPathValue((d1-d2) * mu, ix, iy);
+#if 0
+      if (print_verbose)
+        printf("dest: (%.3f, %.3f)\n",getGridPosition(ix,iy).X(), getGridPosition(ix,iy).Y());
+#endif
+    }
     else
     {
       incOptPathValue(((source_point - getGridPosition(ix, iy)).Length() - d1) * mu, ix, iy);
