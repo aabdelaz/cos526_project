@@ -277,11 +277,9 @@ static RNBoolean InBounds(const R3Vector &v1, const R3Vector &v2,
     double dot_cb = v2.Dot(b);
     if (dot_cb < dot_ac) return FALSE;
 
-    double dot_abneg = v1.Dot(-b);
-    if (dot_abneg > dot_ab && dot_abneg > dot_cb)
+    if ((-dot_ab) > dot_ab && (-dot_ab) > dot_cb)
       return FALSE;
-    double dot_cbneg = v2.Dot(-b);
-    if (dot_cbneg > dot_ab && dot_cbneg > dot_cb)
+    if ((-dot_cb) > dot_ab && (-dot_cb) > dot_cb)
       return FALSE;
     return TRUE;
  
