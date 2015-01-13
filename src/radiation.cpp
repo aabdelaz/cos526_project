@@ -310,6 +310,8 @@ static RNScalar SourceDistToEdge(const R3Point &endpt1, const R3Point &endpt2,
   t1 /= denom;
   if (RNIsNegative(t1) || RNIsPositive(t1 - 1.0))
     return -1;
+  if (RNIsPositive(t2 - 1.0))
+    return -1;
   return t2 * (dest - source).Length();
 }
 
@@ -375,10 +377,13 @@ static void UpdatePathLength(int ix, int iy, const R3Point &v1, const R3Point &v
     }
     else
     {
+      // inc by distance from source to wall
+      RNScalar totlength = (source_point - getGridPosition(ix, iy)).Length();
+      incOptPathValue((totlength - d1) * mu, ix, iy);
+
 #if 0
-      incOptPathValue(((source_point - getGridPosition(ix, iy)).Length() - d1) * mu, ix, iy);
-#endif
       incOptPathValue(d1 * mu, ix, iy);
+#endif
       if (print_verbose)
         printf("Really unlucky! Hit a corner.\n");
     }
@@ -387,9 +392,7 @@ static void UpdatePathLength(int ix, int iy, const R3Point &v1, const R3Point &v
   else
   {
     // one or three negative. Most likely three negative, but if one negative then must deal with it
-#if 0
-    RNScalar totlength = (source_point - getGridPosition(ix, iy)).Length();
-#endif
+
     RNScalar d1, d2;
     d2 = -1;
     if (RNIsPositive(dist1))
@@ -432,10 +435,12 @@ static void UpdatePathLength(int ix, int iy, const R3Point &v1, const R3Point &v
     }
     else
     {
-#if 0
+      // inc by distance from source to wall
+      RNScalar totlength = (source_point - getGridPosition(ix, iy)).Length();
       incOptPathValue((totlength-d1) * mu, ix, iy);
-#endif
+#if 0
       incOptPathValue(d1 * mu, ix, iy);
+#endif
     }
   }
 
@@ -448,6 +453,7 @@ static void CalculatePathsWall(R3Box &wall, R3Affine &transformation, Radiator &
 
   R3Vector bv1, bv2;
   R3Point source_pt = source.Position();
+  RNBoolean source_inside = FALSE;
   // get bounding vertices
   GetBoundingVertices(wall, transformation, &v1, &v2, &v3, &v4);
   if (print_verbose)
@@ -460,10 +466,14 @@ static void CalculatePathsWall(R3Box &wall, R3Affine &transformation, Radiator &
   }
 
   GetBoundingVectors(v1, v2, v3, v4, source_pt, &bv1, &bv2);
-
+  if (!(InBounds(bv1, bv2, source_pt, v1) && InBounds(bv1, bv2, source_pt, v2) && InBounds(bv1, bv2, source_pt, v3)  && InBounds(bv1, bv2, source_pt, v4)  ))
+  {
+    source_inside = TRUE;
+    printf("Source inside wall! \n");
+  }
   for (int i = 0; i < grid_nx; i++)
     for (int j = 0; j < grid_ny; j++)
-      if (InBounds(bv1, bv2, source_pt, getGridPosition(i,j)))
+      if (source_inside || InBounds(bv1, bv2, source_pt, getGridPosition(i,j)))
         UpdatePathLength(i, j, v1, v2, v3, v4, source_pt, mu);
 
 }
